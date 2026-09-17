@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Credit Risk ETL + Scoring Pipeline</title>
+<style>
+  @page { size: A4; margin: 20mm 18mm 22mm 18mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    color: #17181a;
+    font-size: 11.5px;
+    line-height: 1.55;
+    margin: 0;
+  }
+  .cover {
+    height: 247mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    page-break-after: always;
+    border-top: 10px solid #2a78d6;
+  }
+  .cover .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 11px;
+    color: #52514e;
+    font-weight: 600;
+    margin-bottom: 18px;
+  }
+  .cover h1 {
+    font-size: 34px;
+    line-height: 1.15;
+    margin: 0 0 14px 0;
+    color: #0b0b0b;
+  }
+  .cover .sub {
+    font-size: 14px;
+    color: #52514e;
+    max-width: 520px;
+  }
+  .cover .meta {
+    margin-top: 60px;
+    font-size: 11px;
+    color: #898781;
+    border-top: 1px solid #e1e0d9;
+    padding-top: 14px;
+    max-width: 420px;
+  }
+  .cover .meta div { margin-bottom: 4px; }
+  h2 {
+    font-size: 18px;
+    color: #0b0b0b;
+    margin: 0 0 4px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #0b0b0b;
+  }
+  h2 .num {
+    color: #2a78d6;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+  h3 {
+    font-size: 13px;
+    color: #0b0b0b;
+    margin: 18px 0 6px 0;
+  }
+  section { page-break-inside: avoid; margin-bottom: 22px; }
+  p { margin: 6px 0; color: #2b2b2b; }
+  ul, ol { margin: 6px 0; padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  code, .mono {
+    font-family: "SF Mono", "Menlo", monospace;
+    font-size: 10.5px;
+    background: #f2f1ec;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #184f95;
+  }
+  pre {
+    background: #17181a;
+    color: #e7e6e0;
+    padding: 12px 14px;
+    border-radius: 6px;
+    font-family: "SF Mono", "Menlo", monospace;
+    font-size: 10px;
+    line-height: 1.5;
+    overflow-x: auto;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 8px 0 4px 0;
+    font-size: 10.5px;
+  }
+  th {
+    background: #17181a;
+    color: #fff;
+    text-align: left;
+    padding: 6px 8px;
+    font-weight: 600;
+  }
+  td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #e1e0d9;
+    font-variant-numeric: tabular-nums;
+  }
+  tr:nth-child(even) td { background: #f9f9f7; }
+  .kpi-row {
+    display: flex;
+    gap: 12px;
+    margin: 10px 0 4px 0;
+  }
+  .kpi {
+    flex: 1;
+    border: 1px solid #e1e0d9;
+    border-radius: 6px;
+    padding: 10px 12px;
+    background: #fcfcfb;
+  }
+  .kpi .val { font-size: 19px; font-weight: 700; color: #0b0b0b; }
+  .kpi .lbl { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.06em; color: #898781; margin-top: 2px; }
+  .badge {
+    display: inline-block;
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 10px;
+    color: #fff;
+  }
+  .badge.good { background: #0ca30c; }
+  .badge.warn { background: #c98500; }
+  .badge.crit { background: #d03b3b; }
+  .note {
+    background: #f2f6fc;
+    border-left: 3px solid #2a78d6;
+    padding: 8px 12px;
+    font-size: 10.5px;
+    color: #2b2b2b;
+    border-radius: 0 4px 4px 0;
+  }
+  .warn-note {
+    background: #fdf3ea;
+    border-left: 3px solid #eb6834;
+    padding: 8px 12px;
+    font-size: 10.5px;
+    color: #2b2b2b;
+    border-radius: 0 4px 4px 0;
+  }
+  .diagram {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 12px 0;
+    font-size: 10.5px;
+    flex-wrap: wrap;
+  }
+  .diagram .stage {
+    border: 1px solid #c3c2b7;
+    border-radius: 5px;
+    padding: 7px 10px;
+    background: #fcfcfb;
+    text-align: center;
+    min-width: 78px;
+  }
+  .diagram .stage .n { font-weight: 700; color: #2a78d6; display:block; font-size: 9px; }
+  .diagram .arrow { color: #898781; font-size: 13px; }
+  footer.pagefoot {
+    position: fixed;
+    bottom: -14mm;
+    left: 0; right: 0;
+    font-size: 9px;
+    color: #898781;
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #e1e0d9;
+    padding-top: 4px;
+  }
+  .two-col { display: flex; gap: 20px; }
+  .two-col > div { flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="eyebrow">Technical Report</div>
+  <h1>Credit Risk ETL &amp;<br>Scoring Pipeline</h1>
+  <div class="sub">
+    An end-to-end PySpark pipeline that ingests a private-credit style loan
+    portfolio (borrower &rarr; facility &rarr; transaction), engineers risk
+    features with distributed window functions, and scores each facility's
+    default risk using Spark ML.
+  </div>
+  <div class="meta">
+    <div><strong>Repository</strong> &mdash; github.com/jayantjain05/PIPELINE_CREDIT_RISK</div>
+    <div><strong>Stack</strong> &mdash; PySpark 4.x, Spark ML, Python 3.13</div>
+    <div><strong>Prepared</strong> &mdash; September 2026</div>
+  </div>
+</div>
+
+<section>
+<h2><span class="num">1.</span>Problem</h2>
+<p>
+Private credit lenders manage portfolios across multiple borrowers, each with
+one or more credit facilities, tracked through monthly payment and exposure
+snapshots. To monitor portfolio health, a lender needs to:
+</p>
+<ol>
+  <li>Reliably ingest and validate borrower / facility / transaction data</li>
+  <li>Derive standard credit risk features (delinquency buckets, vintage, utilization, payment behavior trends)</li>
+  <li>Score each facility's risk of near-term deterioration</li>
+  <li>Summarize risk at the portfolio level for reporting</li>
+</ol>
+<p>
+This project implements that workflow end-to-end as distributed Spark
+transformations &mdash; ingestion, validation, feature engineering, and model
+training/scoring &mdash; rather than pandas/sklearn on a single machine
+dataframe, mirroring how this would be built for a real cluster-scale
+portfolio.
+</p>
+</section>
+
+<section>
+<h2><span class="num">2.</span>Data Model</h2>
+<p>
+Data is <strong>synthetically generated</strong>
+(<code>src/generate_synthetic_data.py</code>) to mimic a private-credit
+portfolio at borrower &rarr; facility &rarr; transaction grain, with
+realistic-ish payment behavior driven by a risk-tier-dependent default
+probability. A synthetic dataset was chosen over a public dataset (e.g.
+Lending Club) so the schema matches the borrower / facility / collateral /
+transaction structure used in real private-credit reporting, rather than a
+single flat loan table.
+</p>
+<div class="two-col">
+<div>
+<h3>Borrower</h3>
+<p>borrower_id, industry, risk_tier (Prime / Near-Prime / Subprime), annual_revenue, years_in_business, onboarding_date</p>
+<h3>Facility</h3>
+<p>facility_id, borrower_id, facility_type (Term Loan / Revolver / ABL), credit_limit, interest_rate, disbursement_date, maturity_date, collateral_value</p>
+</div>
+<div>
+<h3>Transaction (monthly snapshot)</h3>
+<p>facility_id, period_end_date, scheduled_payment, actual_payment, outstanding_exposure, days_past_due</p>
+<h3>Generated volumes (this run)</h3>
+<p>2,000 borrowers &middot; 2,954 facilities &middot; 57,580 monthly transaction records (up to 24 months of history per facility)</p>
+</div>
+</div>
+</section>
+
+<section>
+<h2><span class="num">3.</span>Pipeline Architecture</h2>
+<div class="diagram">
+  <div class="stage"><span class="n">01</span>Ingest<br><span class="mono" style="font-size:8.5px">ingest.py</span></div>
+  <div class="arrow">&rarr;</div>
+  <div class="stage"><span class="n">02</span>Clean &amp; Validate<br><span class="mono" style="font-size:8.5px">clean.py</span></div>
+  <div class="arrow">&rarr;</div>
+  <div class="stage"><span class="n">03</span>Feature Eng.<br><span class="mono" style="font-size:8.5px">features.py</span></div>
+  <div class="arrow">&rarr;</div>
+  <div class="stage"><span class="n">04</span>Scoring<br><span class="mono" style="font-size:8.5px">score.py</span></div>
+  <div class="arrow">&rarr;</div>
+  <div class="stage"><span class="n">05</span>Output<br><span class="mono" style="font-size:8.5px">main.py</span></div>
+</div>
+<table>
+<tr><th>Stage</th><th>File</th><th>What it does</th></tr>
+<tr><td>1. Ingest</td><td class="mono">ingest.py</td><td>Reads raw CSVs with an explicit enforced schema; logs row counts, null rates, and duplicate counts per table</td></tr>
+<tr><td>2. Clean &amp; validate</td><td class="mono">clean.py</td><td>Dedupes on natural keys; enforces referential integrity (facilities reference a valid borrower, transactions a valid facility); quarantines failing records instead of silently dropping them</td></tr>
+<tr><td>3. Feature engineering</td><td class="mono">features.py</td><td>Builds a facility-level snapshot with DPD buckets, vintage, utilization, and trailing-window features (roll-to-worse-bucket flag, 3-month avg payment ratio, 6-month max DPD)</td></tr>
+<tr><td>4. Scoring</td><td class="mono">score.py</td><td>Trains Logistic Regression and Random Forest via <code>pyspark.ml.Pipeline</code> (StringIndexer &rarr; OneHotEncoder &rarr; VectorAssembler &rarr; classifier); evaluates with AUC and KS statistic</td></tr>
+<tr><td>5. Output</td><td class="mono">main.py</td><td>Writes the feature table and scored portfolio to Parquet (partitioned by risk tier), plus a portfolio summary CSV</td></tr>
+</table>
+</section>
+
+<section>
+<h2><span class="num">4.</span>Key Design Decisions</h2>
+<ul>
+<li><strong>Quarantine, don't drop.</strong> Records failing validation are written to <code>data/processed/quarantine/</code> rather than discarded, so nothing disappears without a trace &mdash; mirrors how reconciliation would work in a real reporting pipeline.</li>
+<li><strong>Window functions for trailing behavior</strong>, not row-by-row Python loops &mdash; <code>rolled_worse_3mo</code>, <code>payment_ratio_trailing3_avg</code>, and <code>dpd_max_trailing6</code> are computed with Spark <code>Window</code> partitioned by facility and ordered by period, the idiomatic distributed approach instead of collecting to a driver.</li>
+<li><strong>Random Forest vs. Logistic Regression</strong> are both trained and compared, since Random Forest is expected to outperform Logistic Regression on this kind of tabular feature set; this pipeline confirms that pattern.</li>
+<li><strong>Label is a proxy</strong> (60+ DPD or rolled to a worse bucket in the trailing 3 months), built directly from the same window features used to predict it &mdash; so the reported AUC/KS are <strong>optimistic by construction</strong> (see &sect;7, Limitations).</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="num">5.</span>Pipeline Run Results</h2>
+<p>Results below are from an actual execution of <code>python src/main.py</code> against the generated synthetic dataset.</p>
+<div class="kpi-row">
+  <div class="kpi"><div class="val">2,954</div><div class="lbl">Facilities Scored</div></div>
+  <div class="kpi"><div class="val">0</div><div class="lbl">Records Quarantined</div></div>
+  <div class="kpi"><div class="val">9.3%</div><div class="lbl">High-Risk Rate (Test Set)</div></div>
+  <div class="kpi"><div class="val">0.979</div><div class="lbl">Best Model AUC (RF)</div></div>
+</div>
+
+<h3>Ingest &amp; Clean</h3>
+<table>
+<tr><th>Table</th><th>Row count</th><th>Valid</th><th>Quarantined</th></tr>
+<tr><td>borrowers</td><td>2,000</td><td>2,000</td><td>0</td></tr>
+<tr><td>facilities</td><td>2,954</td><td>2,954</td><td>0</td></tr>
+<tr><td>transactions</td><td>57,580</td><td>57,580</td><td>0</td></tr>
+</table>
+
+<h3>Model comparison (held-out test set, 730 facilities)</h3>
+<table>
+<tr><th>Model</th><th>AUC</th><th>KS statistic</th></tr>
+<tr><td>Logistic Regression</td><td>0.9755</td><td>0.8746</td></tr>
+<tr><td>Random Forest (100 trees, depth 6)</td><td><strong>0.9786</strong></td><td><strong>0.8977</strong></td></tr>
+</table>
+<p>AUC and KS are the standard scorecard evaluation metrics used in credit risk modeling. Random Forest modestly outperforms Logistic Regression here.</p>
+
+<h3>Risk tier breakdown (Random Forest scores, test set)</h3>
+<table>
+<tr><th>Risk tier</th><th>Facilities</th><th>Avg risk score</th><th>Avg utilization</th><th>High-risk count</th></tr>
+<tr><td><span class="badge good">Prime</span></td><td>338</td><td>0.028</td><td>17.7%</td><td>9</td></tr>
+<tr><td><span class="badge warn">Near-Prime</span></td><td>279</td><td>0.103</td><td>18.1%</td><td>29</td></tr>
+<tr><td><span class="badge crit">Subprime</span></td><td>113</td><td>0.282</td><td>26.7%</td><td>30</td></tr>
+</table>
+
+<h3>Portfolio summary &mdash; risk tier &times; DPD bucket (facility count)</h3>
+<table>
+<tr><th>Risk tier</th><th>Current</th><th>1&ndash;30</th><th>31&ndash;60</th><th>61&ndash;90</th><th>90+</th></tr>
+<tr><td>Prime</td><td>329</td><td>8</td><td>1</td><td>0</td><td>0</td></tr>
+<tr><td>Near-Prime</td><td>244</td><td>25</td><td>8</td><td>2</td><td>0</td></tr>
+<tr><td>Subprime</td><td>70</td><td>25</td><td>9</td><td>1</td><td>8</td></tr>
+</table>
+</section>
+
+<section>
+<h2><span class="num">6.</span>Feature Engineering Detail</h2>
+<p>All features are computed per facility on the transaction history, then reduced to the latest snapshot per facility:</p>
+<ul>
+<li><strong>dpd_bucket</strong> &mdash; Current / 1&ndash;30 / 31&ndash;60 / 61&ndash;90 / 90+, derived from <code>days_past_due</code></li>
+<li><strong>vintage_months</strong> &mdash; months between snapshot date and disbursement date</li>
+<li><strong>utilization_ratio</strong> &mdash; outstanding_exposure / credit_limit</li>
+<li><strong>rolled_worse_3mo</strong> &mdash; 1 if current DPD is worse than DPD three months prior (via <code>F.lag</code> over a facility-partitioned window)</li>
+<li><strong>payment_ratio_trailing3_avg</strong> &mdash; trailing 3-month average of actual/scheduled payment (via a <code>rowsBetween(-2, 0)</code> window)</li>
+<li><strong>dpd_max_trailing6</strong> &mdash; max DPD over the trailing 6 months (<code>rowsBetween(-5, 0)</code>)</li>
+</ul>
+<p>The classifier pipeline (<code>score.py</code>) indexes and one-hot encodes <code>risk_tier</code>, <code>industry</code>, and <code>facility_type</code>, assembles them with the numeric features above into a single feature vector, and feeds that into <code>LogisticRegression</code> / <code>RandomForestClassifier</code> via a single <code>pyspark.ml.Pipeline</code>.</p>
+</section>
+
+<section>
+<h2><span class="num">7.</span>Limitations</h2>
+<div class="warn-note">
+<strong>Label leakage by construction.</strong> The target label is derived from the same trailing-window DPD features used as predictors, so the AUC/KS numbers in &sect;5 demonstrate pipeline mechanics, not a validated forward-looking default model. A production version would use a strictly forward-looking label (e.g. "did this facility hit 90+ DPD in the <em>next</em> 3 months") with a proper train/test time split to avoid look-ahead bias.
+</div>
+<ul style="margin-top:10px">
+<li><strong>Synthetic data</strong> &mdash; payment behavior is simulated from a simple risk-tier-based probability, not real borrower behavior; it won't capture macro shocks, industry concentration effects, or seasonality.</li>
+<li><strong>Single-machine Spark</strong> (<code>local[*]</code>) &mdash; this runs on one machine for development; a real cluster (EMR/Databricks) would need partition tuning and possibly a different file format strategy for the raw layer.</li>
+<li><strong>No orchestration tool</strong> &mdash; <code>main.py</code> runs stages sequentially with logging. A production version would use Airflow/Dagster for scheduling, retries, and lineage.</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="num">8.</span>Running It</h2>
+<pre>pip install -r requirements.txt
+
+# 1. Generate synthetic data (~2,000 borrowers, ~2,950 facilities, ~57,500 transactions)
+python src/generate_synthetic_data.py
+
+# 2. Run the full pipeline: ingest -&gt; clean -&gt; features -&gt; score -&gt; output
+python src/main.py
+
+# 3. Run tests
+pytest tests/</pre>
+<p>Output lands in <code>data/processed/</code>:</p>
+<ul>
+<li><code>feature_table/</code> &mdash; full engineered feature set (Parquet)</li>
+<li><code>scored_portfolio/</code> &mdash; scored facilities, partitioned by risk tier (Parquet)</li>
+<li><code>portfolio_summary/</code> &mdash; aggregated risk summary by tier &times; DPD bucket (CSV)</li>
+<li><code>quarantine/</code> &mdash; any records that failed validation (CSV, if present)</li>
+</ul>
+<div class="note">Full source, tests, and this report live at <span class="mono">github.com/jayantjain05/PIPELINE_CREDIT_RISK</span></div>
+</section>
+
+</body>
+</html>
